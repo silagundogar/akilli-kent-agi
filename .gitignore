@@ -1,0 +1,16 @@
+# Bağımlılıklar ve Geçici Dosyalar
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Günlük dosyaları (Logs)
+*.log
+npm-debug.log*
+
+# Editör & IDE ayarları
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
