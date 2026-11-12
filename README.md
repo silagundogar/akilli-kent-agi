@@ -66,14 +66,14 @@ Tüm belediyecilik süreçlerini kapsayan 10 uzman müdürlük:
 3. **Elektrik & Aydınlatma Şefliği** (Sokak Lambaları, Park Aydınlatması)
 4. **Park ve Bahçeler Müdürlüğü** (Oyun Parkları, Budama, Yeşil Alanlar)
 5. **Temizlik İşleri Müdürlüğü** (Konteyner Boşaltma, Sokak Yıkama, Moloz)
-6. **Zabıta Müdürlüğü** (Kaldırım İşgali, Seyyar Satıcı, Denetim)
-7. **Veteriner İşleri Müdürlüğü** (Yaralı Sokak Hayvanı, Hayvan Ambulansı)
-8. **Ulaşım Hizmetleri Müdürlüğü** (Trafik Işıkları, Duraklar, Tabelalar)
-9. **İmar ve Şehircilik Müdürlüğü** (Kaçak Yapı, Metruk Binalar)
-10. **Sosyal Yardım İşleri Müdürlüğü** (Evde Bakım, Engelli Destek)
+6. **Zabıta Müdürlüğü** (Kaldırım İşgali, Seyyar Satıcı, Gürültü & Fiyat Denetimi)
+7. **Veteriner İşleri Müdürlüğü** (Yaralı Hayvan, Kısırlaştırma, Hayvan Ambulansı)
+8. **Ulaşım Hizmetleri Müdürlüğü** (Sinyalizasyon/Trafik Işıkları, Duraklar, Tabelalar)
+9. **İmar ve Şehircilik Müdürlüğü** (Kaçak Yapı, Metruk/Tehlikeli Binalar)
+10. **Sosyal Yardım İşleri Müdürlüğü** (Evde Bakım, Engelli Destek & Sosyal Yardım)
 
-### 4. 🔒 Rol Tabanlı Personel Güvenliği (RBAC)
-Belediye masası şifreli giriş ile korunmaktadır. Test etmek için sisteme tanımlı hazır personel rolleri:
+### 4. 🔒 Belediye Personeli Yetkilendirme & Giriş Rolleri
+Yetkisiz erişimi engelleyen rol tabanlı giriş sistemi. Test amaçlı demo hesapları:
 
 | Rol | Kullanıcı Adı | Şifre | Yetki Kapsamı |
 | :--- | :--- | :--- | :--- |
