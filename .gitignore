@@ -1,13 +1,38 @@
-# Bağımlılıklar ve Geçici Dosyalar
+# ==============================================================================
+# SİBER GÜVENLİK & GİZLİLİK KURALLARI (CISO DEFENSE POLICY)
+# Bu dosyada tanımlanan hiçbir gizli anahtar, token veya yapılandırma
+# kesinlikle Git versiyon kontrolüne ve genel ağa (GitHub) SIZDIRILAMAZ!
+# ==============================================================================
+
+# 1. Ortam Değişkenleri & Gizli Anahtarlar (Secrets & Environment)
+.env
+.env.*
+!.env.example
+*.env
+*.secret
+*.token
+*.credential
+credentials.json
+secrets.json
+tokens.json
+
+# 2. Bulut Altyapısı & SSH Kimlik Bilgileri (Cloud & SSH Credentials)
+oracle_instance.json
+*.pem
+*.key
+*.pub
+id_*
+known_hosts
+oci_config
+
+# 3. Bağımlılıklar & Geçici Dosyalar (Dependencies & Temp)
 node_modules/
 .DS_Store
 Thumbs.db
-
-# Günlük dosyaları (Logs)
 *.log
 npm-debug.log*
 
-# Editör & IDE ayarları
+# 4. Geliştirici Ortamı & IDE Ayarları (IDE & Editor Settings)
 .vscode/
 .idea/
 *.suo
@@ -15,7 +40,7 @@ npm-debug.log*
 *.njsproj
 *.sln
 
-# Sunucu ve Kimlik Bilgileri
-oracle_instance.json
-*.pem
-*.key
+# 5. Yerel Test & Çalışma Dosyaları
+scratch/
+tmp/
+temp/
