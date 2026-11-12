@@ -1,6 +1,7 @@
 # 🏙️ Akıllı Kent Ağı (AKA) — Afyonkarahisar Belediyesi
 ### Yeni Nesil Coğrafi Bilgi Sistemi (CBS) & Gerçek Zamanlı Belediye Arıza Yönetim Platformu
 
+[![Oracle Cloud](https://img.shields.io/badge/Production%20Server-Oracle%20Cloud%20Always%20Free-F80000?style=for-the-badge&logo=oracle)](http://141.144.234.209)
 [![Canlı Demo](https://img.shields.io/badge/Canlı%20Demo-GitHub%20Pages-success?style=for-the-badge&logo=github)](https://silagundogar.github.io/akilli-kent-agi/)
 [![Database](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
 [![Realtime](https://img.shields.io/badge/Sync-Realtime%20WebSockets-FF4154?style=for-the-badge)](https://supabase.com/docs/guides/realtime)
@@ -13,7 +14,8 @@ Vatandaşlar ile belediye koordinasyon birimleri arasındaki iletişimi dijitall
 
 ## 🌐 Canlı Demo & Hızlı Erişim
 
-* **Canlı Web Uygulaması:** [https://silagundogar.github.io/akilli-kent-agi/](https://silagundogar.github.io/akilli-kent-agi/)
+* **Canlı Bulut Sunucusu (Oracle Cloud):** [http://141.144.234.209](http://141.144.234.209)
+* **Canlı Web Uygulaması (GitHub Pages):** [https://silagundogar.github.io/akilli-kent-agi/](https://silagundogar.github.io/akilli-kent-agi/)
 * **Yerel Başlatma:** Proje dizininde `index.html` dosyasına çift tıklayarak veya `powershell .\start-server.ps1` komutuyla doğrudan çalıştırabilirsiniz.
 
 ---
