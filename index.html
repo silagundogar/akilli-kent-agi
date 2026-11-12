@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Akıllı Kent Ağı (AKA) - Belediye Arıza & Şikayet Yönetim Sistemi</title>
+  <title>Afyonkarahisar Belediyesi - Akıllı Kent Ağı (AKA)</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -41,6 +41,9 @@
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+  <!-- Supabase JS Client (Cloud Database & Realtime Sync) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -53,15 +56,15 @@
         
         <!-- Brand Logo & Title -->
         <div class="flex items-center space-x-3 cursor-pointer" onclick="switchPortal('citizen'); switchCitizenTab('form');">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-100 dark:ring-blue-900/40">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-red-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-100 dark:ring-blue-900/40">
             <i data-lucide="building-2" class="w-7 h-7"></i>
           </div>
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">AKA</span>
-              <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full">v2.0 AI Destekli</span>
+              <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-300 rounded-full border border-red-200 dark:border-red-800">Afyonkarahisar</span>
             </div>
-            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 hidden sm:block">Akıllı Kent Ağı • Arıza & Şikayet Yönetim Sistemi</p>
+            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 hidden sm:block">Afyonkarahisar Belediyesi • Akıllı Kent Ağı</p>
           </div>
         </div>
 
@@ -71,8 +74,8 @@
             <i data-lucide="user-check" class="w-4 h-4"></i>
             <span>Vatandaş Portalı</span>
           </button>
-          <button id="btn-admin-mode" onclick="switchPortal('admin')" class="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+          <button id="btn-admin-mode" onclick="handleAdminPortalClick()" class="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Belediye Personeli Şifreli Girişi">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
             <span>Belediye Paneli</span>
             <span id="badge-pending-count" class="ml-1 bg-red-500 text-white text-[11px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
           </button>
@@ -87,17 +90,40 @@
             <span class="hidden md:inline">AKA Asistan</span>
           </button>
 
+          <!-- Database Status & Setup Modal Trigger -->
+          <button onclick="openDatabaseModal()" id="btn-db-status" title="Merkezi Veritabanı (Supabase) Durumu & Ayarları" class="px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition font-bold text-xs flex items-center space-x-1.5 shadow-sm">
+            <span id="db-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <span id="db-status-text" class="text-[11px] font-bold hidden sm:inline">DB: Yerel</span>
+            <i data-lucide="database" class="w-3.5 h-3.5 text-slate-500"></i>
+          </button>
+
           <!-- Dark/Light Theme Toggle -->
           <button onclick="toggleDarkMode()" title="Karanlık/Aydınlık Tema" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
             <i id="theme-icon" data-lucide="moon" class="w-5 h-5"></i>
           </button>
 
-          <!-- Notification Bell -->
-          <button onclick="toggleQuickNotification()" title="Son Bildirimler" class="relative p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-            <i data-lucide="bell" class="w-5 h-5"></i>
-            <span id="notif-indicator" class="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
-            <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
-          </button>
+          <!-- Notification Bell with Dropdown Container -->
+          <div class="relative">
+            <button onclick="toggleNotificationDropdown(event)" title="Son Bildirimler" class="relative p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+              <span id="notif-indicator" class="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
+              <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
+            </button>
+
+            <!-- Notifications Dropdown Panel -->
+            <div id="notifications-dropdown-menu" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden text-xs animate-drop-in">
+              <div class="p-3.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between font-bold">
+                <span class="text-slate-900 dark:text-white flex items-center space-x-1.5">
+                  <i data-lucide="bell-ring" class="w-4 h-4 text-blue-600"></i>
+                  <span>Sistem & Saha Bildirimleri</span>
+                </span>
+                <span id="notif-badge-count" class="bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full">0 Yeni</span>
+              </div>
+              <div id="notifications-list" class="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
 
           <!-- Reset Demo Button -->
           <button onclick="resetToDemoData()" title="Örnek Verileri Sıfırla" class="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition text-xs font-semibold flex items-center space-x-1 border border-slate-200 dark:border-slate-700">
@@ -148,10 +174,10 @@
             <span>Yapay Zeka Destekli Akıllı Şehir Ekosistemi</span>
           </div>
           <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
-            Şehrini birlikte güzelleştirelim, sorunları anında çözelim.
+            Afyonkarahisar'ı birlikte güzelleştirelim, sorunları anında çözelim.
           </h1>
           <p class="mt-3 text-base sm:text-lg text-blue-100 font-normal max-w-2xl">
-            Gördüğün çukuru, yanmayan sokak lambasını veya su sızıntısını fotoğrafla; <strong>Yapay Zeka Vision</strong> hasarı anında tespit etsin, ekiplerimiz müdahale etsin.
+            Gördüğün asfalt çukurunu, su patlağını veya yanmayan sokak lambasını bildir; <strong>Afyonkarahisar Belediyesi</strong> ekiplerimiz anında müdahale etsin, süreci canlı takip et.
           </p>
         </div>
 
@@ -184,7 +210,7 @@
         </button>
         <button id="c-tab-track" onclick="switchCitizenTab('track')" class="flex items-center space-x-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
           <i data-lucide="search" class="w-4 h-4"></i>
-          <span>İhbar Takibi & Durum</span>
+          <span>İhbar Takibi & Süreç</span>
         </button>
         <button id="c-tab-map" onclick="switchCitizenTab('map')" class="flex items-center space-x-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
           <i data-lucide="map-pin" class="w-4 h-4"></i>
@@ -205,8 +231,8 @@
 
             <!-- 1. Category Selection -->
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">1. Arıza Kategorisi Seçin</label>
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="category-selector-container">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">1. Belediye Birimi & Arıza Kategorisi Seçin (10 Birim)</label>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" id="category-selector-container">
                 <!-- Injected via JavaScript -->
               </div>
             </div>
@@ -232,8 +258,8 @@
                   <div class="w-12 h-12 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition">
                     <i data-lucide="camera" class="w-6 h-6"></i>
                   </div>
-                  <div class="text-sm font-semibold text-slate-700 dark:text-slate-300">Fotoğraf seçmek için tıklayın veya sürükleyin</div>
-                  <div class="text-xs text-slate-400">Yapay Zeka hasarı ve şiddetini otomatik algılar</div>
+                  <div class="text-sm font-semibold text-slate-700 dark:text-slate-300">Fotoğraf seçmek veya çekmek için tıklayın</div>
+                  <div class="text-xs text-slate-400">Otomatik sıkıştırma ve Yapay Zeka hasar tespiti uygulanır</div>
                 </div>
 
                 <!-- Preview with Scanning Effect -->
@@ -353,25 +379,43 @@
                 <div>
                   <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Seçilen Mahalle</label>
                   <select id="select-neighborhood" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-800 font-medium">
+                    <option value="Dumlupınar Mahallesi">Dumlupınar Mahallesi</option>
+                    <option value="Marulcu Mahallesi">Marulcu Mahallesi</option>
+                    <option value="Ali Çetinkaya Mahallesi">Ali Çetinkaya Mahallesi</option>
+                    <option value="Karaman Mahallesi">Karaman Mahallesi</option>
+                    <option value="Zafer Mahallesi">Zafer Mahallesi</option>
+                    <option value="Esentepe Mahallesi">Esentepe Mahallesi</option>
+                    <option value="Kanlıca Mahallesi">Kanlıca Mahallesi</option>
+                    <option value="Sahipata Mahallesi">Sahipata Mahallesi</option>
+                    <option value="Osmangazi Mahallesi (Uydukent)">Osmangazi Mahallesi (Uydukent)</option>
+                    <option value="Yeşilyurt Mahallesi (Uydukent)">Yeşilyurt Mahallesi (Uydukent)</option>
+                    <option value="Battalgazi Mahallesi (Uydukent)">Battalgazi Mahallesi (Uydukent)</option>
+                    <option value="Fatih Mahallesi">Fatih Mahallesi</option>
+                    <option value="Güvenevler Mahallesi">Güvenevler Mahallesi</option>
+                    <option value="Kocatepe Mahallesi">Kocatepe Mahallesi</option>
                     <option value="Cumhuriyet Mahallesi">Cumhuriyet Mahallesi</option>
-                    <option value="Atatürk Mahallesi">Atatürk Mahallesi</option>
-                    <option value="Fevzi Çakmak Mahallesi">Fevzi Çakmak Mahallesi</option>
-                    <option value="Yeni Mahalle">Yeni Mahalle</option>
-                    <option value="İstasyon Mahallesi">İstasyon Mahallesi</option>
-                    <option value="Barış Mahallesi">Barış Mahallesi</option>
-                    <option value="Yeşiltepe Mahallesi">Yeşiltepe Mahallesi</option>
+                    <option value="Selçuklu Mahallesi">Selçuklu Mahallesi</option>
+                    <option value="Hamidiye Mahallesi">Hamidiye Mahallesi</option>
+                    <option value="Örnekevler Mahallesi">Örnekevler Mahallesi</option>
+                    <option value="Erkmen Bölgesi">Erkmen Bölgesi</option>
                   </select>
                 </div>
 
                 <div>
                   <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Sokak / Cadde / Kapı No</label>
-                  <input type="text" id="input-address" placeholder="Örn: İnönü Cad. No: 42 (veya haritaya tıklayın)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                  <input type="text" id="input-address" placeholder="Örn: İnönü Cad. No: 42 (haritaya tıklayınca otomatik gelir)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
 
-                <div class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl font-mono">
-                  <i data-lucide="navigation" class="w-3.5 h-3.5 text-blue-600"></i>
-                  <span>Koordinat:</span>
-                  <span id="coord-display" class="font-bold text-slate-700 dark:text-slate-200">39.0650, 29.0120</span>
+                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl font-mono">
+                  <div class="flex items-center space-x-2">
+                    <i data-lucide="navigation" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>Koordinat:</span>
+                    <span id="coord-display" class="font-bold text-slate-700 dark:text-slate-200">39.0650, 29.0120</span>
+                  </div>
+                  <div id="geocoding-spinner" class="hidden items-center space-x-1 text-[11px] text-blue-600 dark:text-blue-400 font-sans font-semibold">
+                    <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>
+                    <span>Adres alınıyor...</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -456,7 +500,33 @@
     <!-- ============================================================== -->
     <!-- SECTION 2: BELEDİYE KOORDİNASYON & YÖNETİM MERKEZİ (ADMIN VIEW) -->
     <!-- ============================================================== -->
-    <div id="portal-admin" class="hidden space-y-8">
+    <div id="portal-admin" class="hidden space-y-6">
+      
+      <!-- Admin Personnel Session Banner -->
+      <div id="admin-user-banner" class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg border border-blue-800/50">
+        <div class="flex items-center space-x-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-white shadow-inner">
+            <i data-lucide="shield-check" class="w-6 h-6 text-emerald-400"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span id="admin-user-name" class="font-bold text-base text-white">Ali Yılmaz</span>
+              <span id="admin-user-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-500/30 text-blue-300 border border-blue-400/30">Koordinasyon Masası Şefi</span>
+            </div>
+            <p class="text-xs text-blue-200 mt-0.5">Afyonkarahisar Belediyesi • Saha & İhbar Yönetim Masası</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2.5">
+          <div class="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Yetkili Oturum Aktif</span>
+          </div>
+          <button onclick="handleAdminLogout()" class="px-3.5 py-2 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs flex items-center space-x-1.5 transition shadow-sm">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span>Oturumu Kapat</span>
+          </button>
+        </div>
+      </div>
       
       <!-- Admin Top Metrics Cards -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -548,25 +618,29 @@
       <!-- TAB 1: ADMIN ISSUE TABLE -->
       <div id="admin-view-table" class="space-y-4">
         
-        <!-- Filter Bar -->
-        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- Filter Bar with 5 Columns (Search, Dept, Status, Urgency, Sort) -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           
           <!-- Search -->
           <div class="relative">
             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
-            <input type="text" id="adm-search-filter" oninput="renderAdminTable()" placeholder="Takip no, başlık veya mahalle ara..." class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" id="adm-search-filter" oninput="renderAdminTable()" placeholder="Takip no, başlık, kişi, mahalle ara..." class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
 
           <!-- Department Filter -->
           <div>
             <select id="adm-dept-filter" onchange="renderAdminTable()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-              <option value="all">Tüm Birimler</option>
-              <option value="Fen İşleri Dairesi">Fen İşleri Dairesi</option>
-              <option value="Su ve Kanalizasyon İdaresi">Su ve Kanalizasyon İdaresi</option>
+              <option value="all">Tüm Birimler (10 Müdürlük)</option>
+              <option value="Fen İşleri Müdürlüğü">Fen İşleri Müdürlüğü</option>
+              <option value="Su ve Kanalizasyon İdaresi (AFSU)">Su ve Kanalizasyon İdaresi (AFSU)</option>
+              <option value="Elektrik & Aydınlatma Şefliği">Elektrik & Aydınlatma Şefliği</option>
               <option value="Park ve Bahçeler Müdürlüğü">Park ve Bahçeler Müdürlüğü</option>
               <option value="Temizlik İşleri Müdürlüğü">Temizlik İşleri Müdürlüğü</option>
-              <option value="Zabıta & Çevre Müdürlüğü">Zabıta & Çevre Müdürlüğü</option>
-              <option value="Ulaşım & Sinyalizasyon">Ulaşım & Sinyalizasyon</option>
+              <option value="Zabıta Müdürlüğü">Zabıta Müdürlüğü</option>
+              <option value="Veteriner İşleri Müdürlüğü">Veteriner İşleri Müdürlüğü</option>
+              <option value="Ulaşım Hizmetleri Müdürlüğü">Ulaşım Hizmetleri Müdürlüğü</option>
+              <option value="İmar ve Şehircilik Müdürlüğü">İmar ve Şehircilik Müdürlüğü</option>
+              <option value="Sosyal Yardım İşleri Müdürlüğü">Sosyal Yardım İşleri Müdürlüğü</option>
             </select>
           </div>
 
@@ -578,6 +652,7 @@
               <option value="Inceleniyor">İncelenenler</option>
               <option value="Sahada">Ekipler Sahada</option>
               <option value="Cozuldu">Çözülenler</option>
+              <option value="Iptal">İptal Edilenler</option>
             </select>
           </div>
 
@@ -588,6 +663,16 @@
               <option value="Acil">🚨 Sadece Acil Olanlar</option>
               <option value="Normal">Önemli / Normal</option>
               <option value="Düşük">Rutin / Düşük</option>
+            </select>
+          </div>
+
+          <!-- Sort Filter -->
+          <div>
+            <select id="adm-sort-filter" onchange="renderAdminTable()" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+              <option value="newest">Sıralama: En Yeni</option>
+              <option value="oldest">Sıralama: En Eski</option>
+              <option value="urgent">Sıralama: Önce Aciller</option>
+              <option value="status">Sıralama: Duruma Göre</option>
             </select>
           </div>
 
@@ -690,11 +775,18 @@
               </div>
             </div>
 
-            <!-- Upload resolution photo button for field staff -->
-            <button type="button" onclick="loadSampleResolutionPhoto()" class="mt-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center justify-center space-x-1 py-1 px-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60">
-              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-              <span>Saha Çözüm Fotoğrafı Ekle</span>
-            </button>
+            <!-- Upload resolution photo controls for field staff -->
+            <div class="space-y-1.5 mt-2">
+              <input type="file" id="modal-input-after-photo" accept="image/*" class="hidden" onchange="handleModalAfterPhotoSelect(event)">
+              <button type="button" onclick="document.getElementById('modal-input-after-photo').click()" class="w-full text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 flex items-center justify-center space-x-1.5 py-1.5 px-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800 transition">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span>Cihazdan Fotoğraf Yükle</span>
+              </button>
+              <button type="button" onclick="loadSampleResolutionPhoto()" class="w-full text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-600 flex items-center justify-center space-x-1 py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                <span>Örnek Demo Fotoğrafı Yükle</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -715,12 +807,16 @@
             <div>
               <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Sorumlu Belediye Birimi</label>
               <select id="modal-select-dept" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:ring-2 focus:ring-blue-500 font-medium">
-                <option value="Fen İşleri Dairesi">Fen İşleri Dairesi</option>
-                <option value="Su ve Kanalizasyon İdaresi">Su ve Kanalizasyon İdaresi</option>
+                <option value="Fen İşleri Müdürlüğü">Fen İşleri Müdürlüğü</option>
+                <option value="Su ve Kanalizasyon İdaresi (AFSU)">Su ve Kanalizasyon İdaresi (AFSU)</option>
+                <option value="Elektrik & Aydınlatma Şefliği">Elektrik & Aydınlatma Şefliği</option>
                 <option value="Park ve Bahçeler Müdürlüğü">Park ve Bahçeler Müdürlüğü</option>
                 <option value="Temizlik İşleri Müdürlüğü">Temizlik İşleri Müdürlüğü</option>
-                <option value="Zabıta & Çevre Müdürlüğü">Zabıta & Çevre Müdürlüğü</option>
-                <option value="Ulaşım & Sinyalizasyon">Ulaşım & Sinyalizasyon</option>
+                <option value="Zabıta Müdürlüğü">Zabıta Müdürlüğü</option>
+                <option value="Veteriner İşleri Müdürlüğü">Veteriner İşleri Müdürlüğü</option>
+                <option value="Ulaşım Hizmetleri Müdürlüğü">Ulaşım Hizmetleri Müdürlüğü</option>
+                <option value="İmar ve Şehircilik Müdürlüğü">İmar ve Şehircilik Müdürlüğü</option>
+                <option value="Sosyal Yardım İşleri Müdürlüğü">Sosyal Yardım İşleri Müdürlüğü</option>
               </select>
             </div>
 
@@ -754,19 +850,106 @@
             <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Saha Ekibi Notu / Çözüm Açıklaması</label>
             <textarea id="modal-field-note" rows="2" placeholder="Örn: 2 ton sıcak asfalt serildi, yol trafiğe açıldı." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs focus:ring-2 focus:ring-blue-500 font-medium"></textarea>
           </div>
+
+          <!-- Audit History in Modal -->
+          <div class="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+              <i data-lucide="history" class="w-3.5 h-3.5 text-blue-600"></i>
+              <span>İşlem & Müdahale Tarihçesi (Audit Trail)</span>
+            </h4>
+            <div id="modal-history-list" class="space-y-2 max-h-36 overflow-y-auto p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 text-xs">
+              <!-- Injected via JS -->
+            </div>
+          </div>
         </div>
 
       </div>
 
       <!-- Modal Footer -->
-      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-3">
-        <button onclick="closeActionModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">İptal</button>
-        <button onclick="saveModalChanges()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold shadow-md shadow-blue-500/20 transition flex items-center space-x-1.5">
-          <i data-lucide="check" class="w-4 h-4"></i>
-          <span>Değişiklikleri Kaydet & Vatandaşa Bildir</span>
-        </button>
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center space-x-2">
+          <button type="button" onclick="deleteActiveIssue()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 border border-red-200 dark:border-red-900/50 transition flex items-center space-x-1.5">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <span>İhbarı Sil</span>
+          </button>
+          <button type="button" onclick="printSingleIssueReport()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 transition flex items-center space-x-1.5">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Saha Tutanağı Yazdır</span>
+          </button>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="closeActionModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">İptal</button>
+          <button onclick="saveModalChanges()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold shadow-md shadow-blue-500/20 transition flex items-center space-x-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Değişiklikleri Kaydet & Bildir</span>
+          </button>
+        </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ================= BELEDİYE PERSONELİ GİRİŞ MODALI ================= -->
+  <div id="admin-login-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 max-w-md w-full rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-6 bg-gradient-to-r from-blue-700 via-indigo-700 to-red-600 text-white text-center relative">
+        <button onclick="closeAdminLoginModal()" class="absolute top-4 right-4 text-white/80 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-3 shadow-inner">
+          <i data-lucide="shield-check" class="w-8 h-8 text-white"></i>
+        </div>
+        <h3 class="text-xl font-black">Afyonkarahisar Belediyesi</h3>
+        <p class="text-xs text-blue-100 mt-1">Koordinasyon & Saha Yönetim Masası Girişi</p>
+      </div>
+
+      <!-- Form -->
+      <form onsubmit="handleAdminLogin(event)" class="p-6 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Personel Sicil / Kullanıcı Adı</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input type="text" id="admin-login-username" required placeholder="Örn: admin veya fenisleri" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Giriş Şifresi</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input type="password" id="admin-login-password" required placeholder="••••••••" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+          </div>
+        </div>
+
+        <!-- Quick Demo Profiles -->
+        <div class="pt-1">
+          <span class="text-[10px] text-slate-400 block mb-1.5 font-bold uppercase tracking-wider">Hızlı Demo Giriş Rolleri:</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="fillAdminDemoLogin('admin', 'afyon153')" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[11px] font-bold text-slate-700 dark:text-slate-300 text-left flex items-center space-x-1.5">
+              <span>🏛️</span>
+              <span class="truncate">Koordinasyon Amiri</span>
+            </button>
+            <button type="button" onclick="fillAdminDemoLogin('fenisleri', '153')" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-[11px] font-bold text-slate-700 dark:text-slate-300 text-left flex items-center space-x-1.5">
+              <span>🚧</span>
+              <span class="truncate">Fen İşleri Şefi</span>
+            </button>
+            <button type="button" onclick="fillAdminDemoLogin('zabita', '153')" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-[11px] font-bold text-slate-700 dark:text-slate-300 text-left flex items-center space-x-1.5">
+              <span>👮</span>
+              <span class="truncate">Zabıta Amiri</span>
+            </button>
+            <button type="button" onclick="fillAdminDemoLogin('afsu', '153')" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[11px] font-bold text-slate-700 dark:text-slate-300 text-left flex items-center space-x-1.5">
+              <span>💧</span>
+              <span class="truncate">AFSU Teknikeri</span>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Panele Güvenli Giriş Yap</span>
+        </button>
+      </form>
     </div>
   </div>
 
@@ -778,7 +961,7 @@
       <div class="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between no-print">
         <div class="flex items-center space-x-2">
           <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i>
-          <span class="font-bold text-sm">Resmi Arıza ve Çözüm Raporu Önizleme</span>
+          <span class="font-bold text-sm" id="report-modal-header-title">Resmi Arıza ve Çözüm Raporu Önizleme</span>
         </div>
         <div class="flex items-center space-x-2">
           <button onclick="window.print()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
@@ -799,44 +982,194 @@
     </div>
   </div>
 
-  <!-- ================= WHATSAPP & AKA ASİSTAN CHATBOT WIDGET ================= -->
+  <!-- ================= SUPABASE DATABASE SETTINGS MODAL ================= -->
+  <div id="database-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 max-w-xl w-full rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[92vh] flex flex-col">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
+            <i data-lucide="database" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-base">Merkezi Veritabanı (Supabase)</h3>
+            <p class="text-[11px] text-slate-500">Çoklu cihaz, gerçek zamanlı senkronizasyon ve bulut veritabanı</p>
+          </div>
+        </div>
+        <button onclick="closeDatabaseModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700 dark:text-slate-300">
+        <!-- Status Box -->
+        <div id="db-modal-status-box" class="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-start space-x-3">
+          <i id="db-modal-status-icon" data-lucide="alert-circle" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+          <div>
+            <h4 id="db-modal-status-title" class="font-bold text-amber-900 dark:text-amber-200">Şu An Yerel Hafıza (LocalStorage) Kullanılıyor</h4>
+            <p id="db-modal-status-desc" class="text-[11px] text-amber-700 dark:text-amber-300/80 mt-0.5">
+              Farklı telefon ve bilgisayarların aynı verileri anlık olarak görebilmesi için aşağıdaki alana Supabase bilgilerinizi giriniz.
+            </p>
+          </div>
+        </div>
+
+        <!-- Inputs -->
+        <div class="space-y-3">
+          <div>
+            <label class="block font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Supabase Project URL:
+            </label>
+            <input type="url" id="cfg-supabase-url" placeholder="https://xyzabcdefg.supabase.co" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+            <span class="text-[10px] text-slate-400 mt-0.5 block">Supabase Dashboard > Settings > API > Project URL</span>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-800 dark:text-slate-200 mb-1">
+              Supabase Anon (Public) Key:
+            </label>
+            <input type="password" id="cfg-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+            <span class="text-[10px] text-slate-400 mt-0.5 block">Supabase Dashboard > Settings > API > Project API Keys > `anon public`</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row items-center gap-2 pt-2">
+          <button onclick="saveAndTestDatabaseConnection()" id="btn-save-db" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center justify-center space-x-1.5 shadow-sm">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Bağlantıyı Test Et & Kaydet</span>
+          </button>
+          
+          <button onclick="seedCurrentIssuesToSupabase()" id="btn-seed-db" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition font-bold flex items-center justify-center space-x-1.5">
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+            <span>Demo Verileri Veritabanına Yükle</span>
+          </button>
+
+          <button onclick="disconnectDatabase()" id="btn-disconnect-db" class="w-full sm:w-auto px-3 py-2.5 rounded-xl text-slate-500 hover:text-red-600 transition font-bold flex items-center justify-center space-x-1">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span>Bağlantıyı Kes</span>
+          </button>
+        </div>
+
+        <!-- 1-Click Guide & SQL Accordion -->
+        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-slate-50 dark:bg-slate-800/40">
+          <div class="flex items-center justify-between cursor-pointer" onclick="toggleSqlGuide()">
+            <span class="font-bold flex items-center space-x-1.5 text-slate-900 dark:text-white">
+              <i data-lucide="help-circle" class="w-4 h-4 text-emerald-500"></i>
+              <span>1 Dakikada Supabase Kurulumu & SQL Tablosu</span>
+            </span>
+            <i id="sql-guide-chevron" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform"></i>
+          </div>
+
+          <div id="sql-guide-content" class="hidden mt-3 space-y-2 border-t border-slate-200 dark:border-slate-700 pt-3">
+            <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+              <li><a href="https://supabase.com" target="_blank" class="text-emerald-600 underline font-bold">supabase.com</a> adresinde ücretsiz proje açın.</li>
+              <li>Sol menüden <strong>SQL Editor</strong> bölümüne gidin.</li>
+              <li>Aşağıdaki SQL kodunu yapıştırıp yeşil <strong>RUN</strong> butonuna basın.</li>
+              <li><strong>Project Settings > API</strong> kısmındaki URL ve Anon Key'i yukarıya yapıştırıp "Kaydet"e basın!</li>
+            </ol>
+            <div class="relative mt-2">
+              <pre id="sql-code-snippet" class="bg-slate-900 text-slate-200 p-3 rounded-xl text-[10px] font-mono overflow-x-auto max-h-36">create table if not exists public.issues (
+  id text primary key,
+  code text unique not null,
+  title text not null,
+  "desc" text,
+  category text,
+  department text,
+  urgency text default 'Normal',
+  status text default 'Yeni',
+  neighborhood text,
+  address text,
+  lat double precision,
+  lng double precision,
+  "citizenName" text,
+  "citizenPhone" text,
+  "isAnonymous" boolean default false,
+  "createdAt" text,
+  "assignedTeam" text,
+  "fieldNote" text,
+  "imgBefore" text,
+  "imgAfter" text,
+  rating integer,
+  feedback text,
+  history jsonb default '[]'::jsonb
+);
+alter table public.issues enable row level security;
+create policy "Herkes ihbarları görebilir" on public.issues for select using (true);
+create policy "Herkes yeni ihbar ekleyebilir" on public.issues for insert with check (true);
+create policy "Herkes ihbarları güncelleyebilir" on public.issues for update using (true);
+create policy "Herkes ihbar silebilir" on public.issues for delete using (true);
+alter publication supabase_realtime add table public.issues;</pre>
+              <button onclick="copySqlSchemaToClipboard()" class="absolute top-2 right-2 px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-[10px] font-bold transition">Kopyala</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= AFYONKARAHİSAR BELEDİYESİ NÖBETÇİ UZMAN & WHATSAPP HATTI ================= -->
   <!-- Floating Button -->
   <div class="fixed bottom-6 left-6 z-40">
-    <button onclick="toggleChatbot()" class="group relative flex items-center space-x-2.5 px-4 py-3.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-full shadow-2xl shadow-green-500/40 hover:scale-105 active:scale-95 transition-all">
+    <button onclick="toggleChatbot()" class="group relative flex items-center space-x-2.5 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-700 text-white rounded-full shadow-2xl shadow-green-600/40 hover:scale-105 active:scale-95 transition-all">
       <div class="relative">
         <i data-lucide="message-circle" class="w-6 h-6"></i>
         <span class="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
-          <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+          <span class="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></span>
         </span>
       </div>
-      <span class="font-extrabold text-sm tracking-tight pr-1">WhatsApp Arıza Hattı</span>
+      <div class="text-left">
+        <span class="block font-black text-xs tracking-tight">Afyon Nöbetçi İhbar</span>
+        <span class="text-[10px] text-emerald-200 block">Birim Uzmanıyla Görüş</span>
+      </div>
     </button>
   </div>
 
   <!-- Chatbot Window Modal -->
-  <div id="chatbot-window" class="fixed bottom-24 left-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[540px] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 hidden flex-col overflow-hidden animate-fade-in">
+  <div id="chatbot-window" class="fixed bottom-24 left-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[580px] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 hidden flex-col overflow-hidden animate-fade-in">
     
-    <!-- WhatsApp Header -->
-    <div class="px-4 py-3.5 bg-gradient-to-r from-emerald-700 to-green-800 text-white flex items-center justify-between">
+    <!-- WhatsApp & Specialist Header -->
+    <div class="px-4 py-3 bg-gradient-to-r from-emerald-800 via-teal-800 to-green-900 text-white flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="relative">
-          <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center font-bold text-white">
-            <i data-lucide="building-2" class="w-5 h-5"></i>
+          <div id="chat-specialist-avatar" class="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center font-bold text-xl">
+            👷‍♂️
           </div>
-          <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-emerald-700 rounded-full"></span>
+          <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-emerald-800 rounded-full"></span>
         </div>
         <div>
-          <div class="flex items-center space-x-1">
-            <span class="font-bold text-sm">AKA Çözüm Hattı</span>
+          <div class="flex items-center space-x-1.5">
+            <span id="chat-specialist-name" class="font-bold text-sm">İnş. Müh. Murat Kaya</span>
             <i data-lucide="badge-check" class="w-4 h-4 text-emerald-300 fill-emerald-300"></i>
           </div>
-          <span class="text-[11px] text-emerald-200 block">Çevrimiçi • Belediye Asistanı</span>
+          <span id="chat-specialist-role" class="text-[10px] text-emerald-200 block">Fen İşleri Nöbetçi Amiri • Çevrimiçi</span>
         </div>
       </div>
 
-      <button onclick="toggleChatbot()" class="p-1 rounded-lg text-emerald-200 hover:text-white hover:bg-white/10">
+      <button onclick="toggleChatbot()" class="p-1.5 rounded-lg text-emerald-200 hover:text-white hover:bg-white/10 transition">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
+    </div>
+
+    <!-- Official Direct Call & Real WhatsApp Buttons -->
+    <div class="p-2 bg-emerald-50 dark:bg-emerald-950/60 border-b border-emerald-200 dark:border-emerald-800/60 grid grid-cols-2 gap-2 text-[11px] font-bold">
+      <a href="https://wa.me/905302560303?text=Merhaba%2C%20Afyonkarahisar%20Belediyesi%20ar%C4%B1za%20ve%20%C5%9Fikayet%20bildirimi%20yapmak%20istiyorum." target="_blank" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center space-x-1 shadow-sm transition">
+        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+        <span>WhatsApp'ta Aç</span>
+      </a>
+      <a href="tel:153" class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center space-x-1 shadow-sm transition">
+        <i data-lucide="phone-call" class="w-3.5 h-3.5"></i>
+        <span>ALO 153 Ara</span>
+      </a>
+    </div>
+
+    <!-- Specialist Unit Selector Bar -->
+    <div class="px-2 py-1.5 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center space-x-1.5 overflow-x-auto no-scrollbar text-[10px] font-bold">
+      <button onclick="switchChatSpecialist('fen')" id="spec-btn-fen" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white shadow-sm whitespace-nowrap transition">👷 Fen İşleri</button>
+      <button onclick="switchChatSpecialist('su')" id="spec-btn-su" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 whitespace-nowrap transition">💧 AFSU Su</button>
+      <button onclick="switchChatSpecialist('zabita')" id="spec-btn-zabita" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 whitespace-nowrap transition">👮 Zabıta</button>
+      <button onclick="switchChatSpecialist('veteriner')" id="spec-btn-veteriner" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 whitespace-nowrap transition">🐕 Veteriner</button>
+      <button onclick="switchChatSpecialist('temizlik')" id="spec-btn-temizlik" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 whitespace-nowrap transition">🧹 Temizlik</button>
     </div>
 
     <!-- Chat Messages Area -->
@@ -846,15 +1179,16 @@
 
     <!-- Quick Question Chips -->
     <div class="px-3 py-2 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
-      <button onclick="sendQuickReply('🛣️ Yolda Çukur Var')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">🛣️ Çukur</button>
-      <button onclick="sendQuickReply('💡 Sokak Lambası Sönük')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">💡 Lamba</button>
-      <button onclick="sendQuickReply('💧 Su Borusu Patladı')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">💧 Su Kaçağı</button>
-      <button onclick="sendQuickReply('🔍 Başvuru Durumumu Öğren')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">🔍 Sorgula</button>
+      <button onclick="sendQuickReply('Ambaryolu Caddesinde derin çukur var')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">🛣️ Çukur Bildir</button>
+      <button onclick="sendQuickReply('Su borusu patladı su boşa akıyor')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">💧 Su Patlağı</button>
+      <button onclick="sendQuickReply('Yaralı sokak hayvanı için acil ambulans')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">🐕 Yaralı Hayvan</button>
+      <button onclick="sendQuickReply('Kaldırım işgali ve seyyar satıcı şikayeti')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">👮 Zabıta Şikayet</button>
+      <button onclick="sendQuickReply('Başvuru durumumu sorgulamak istiyorum')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 whitespace-nowrap hover:bg-emerald-50">🔍 Sorgula</button>
     </div>
 
     <!-- Chat Input Box -->
     <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center space-x-2">
-      <input type="text" id="chat-user-input" onkeydown="handleChatInputKey(event)" placeholder="Sorunu buraya yazın..." class="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <input type="text" id="chat-user-input" onkeydown="handleChatInputKey(event)" placeholder="Birim uzmanına sorununuzu veya konumunuzu yazın..." class="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
       <button onclick="sendUserChatMessage()" class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition">
         <i data-lucide="send" class="w-4 h-4"></i>
       </button>
@@ -875,6 +1209,9 @@
       </div>
     </div>
   </footer>
+
+  <!-- Supabase Configuration & Credentials -->
+  <script src="supabase-config.js"></script>
 
   <!-- Main Application Script -->
   <script src="app.js"></script>

@@ -201,16 +201,39 @@ body {
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 
+/* Bildirim Dropdown Animasyonu */
+@keyframes drop-in {
+  0% { opacity: 0; transform: translateY(-10px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-drop-in {
+  animation: drop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* ============================================================ */
 /* 📄 RESMİ BELEDİYE RAPORU & PRINT STİLLERİ                   */
 /* ============================================================ */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+  }
+
   body * {
     visibility: hidden;
   }
+  
   #official-report-modal, #official-report-modal * {
     visibility: visible;
   }
+  
   #official-report-modal {
     position: absolute;
     left: 0;
@@ -220,8 +243,34 @@ body {
     padding: 0;
     background: white !important;
     color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
+
+  #printable-report-content {
+    padding: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   .no-print {
     display: none !important;
+  }
+
+  img {
+    max-width: 100% !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
   }
 }
